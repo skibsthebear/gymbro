@@ -73,8 +73,9 @@ const exercises = [
   const exercisesContainer = document.querySelector('.exercises');
   
   // Dynamically generate exercise sections
-  exercises.forEach(exercise => {
+  exercises.forEach((exercise, index) => {
     const exerciseDiv = document.createElement('div');
+    exerciseDiv.id = `exercise-${index}`;
     exerciseDiv.classList.add('exercise');
     exerciseDiv.innerHTML = `
       <h3 class="exercise-section name">
@@ -89,6 +90,7 @@ const exercises = [
       <div class="exercise-section notes">
         <div class="notes-content">${exercise.notes}</div>
       </div>
+      <input type="text" class="weight-input" placeholder="Weight (kg)">
       <div class="exercise-section tracking">
         <label class="set-checkbox">
           <input type="checkbox">
@@ -107,8 +109,38 @@ const exercises = [
     exercisesContainer.appendChild(exerciseDiv);
   });
 
-// This remains at the bottom to handle browser exit confirmation
+// Add after exercise generation code
+function saveWeights() {
+  document.querySelectorAll('.weight-input').forEach(input => {
+    localStorage.setItem(`workoutWeights_${input.closest('.exercise').id}`, input.value);
+  });
+}
+
+function loadWeights() {
+  document.querySelectorAll('.weight-input').forEach(input => {
+    const savedWeight = localStorage.getItem(`workoutWeights_${input.closest('.exercise').id}`);
+    if (savedWeight) input.value = savedWeight;
+  });
+}
+
+// Load saved weights when page loads
+window.addEventListener('load', loadWeights);
+
+// Save weights on input
+document.addEventListener('input', (e) => {
+  if (e.target.classList.contains('weight-input')) {
+    saveWeights();
+  }
+});
+
+// Modify existing beforeunload handler
 window.addEventListener('beforeunload', (e) => {
-  e.preventDefault();
-  e.returnValue = 'You have unsaved changes! All checkboxes will be reset.';
+  const hasUnsavedWeights = Array.from(document.querySelectorAll('.weight-input'))
+    .some(input => input.value !== '');
+  
+  if (hasUnsavedWeights) {
+    e.preventDefault();
+    e.returnValue = 'You have unsaved weights and checkboxes! Data will be saved automatically.';
+    saveWeights(); // One final save attempt
+  }
 });
